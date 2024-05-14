@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../index.css" rel="stylesheet" type="text/css">
+<script src="../index.js" type="text/javascript"></script>
+<title>thronic.com - Iptables Firewall and Gateway</title>
+</head>
+<body>
+
+<div id="header"><script>header();</script></div>
+
+<div id="main">
+
+<div id="main-menu-left">
+	<script>
+		backlink();
+		NotatMeny('linux_iptables_firewall_and_gateway.html');
+	</script>
+</div>
+
+<div id="main-content" style="text-align:left">
+<h1>Iptables Firewall and Gateway</h1><br>
+
+Revised combined firewall and gateway script(s).<br>
+Updated for use with System V init system.<br>
+Added comments for easier customization.<br>
+Added superfluous commented rules as examples.<br><br>
+
+<b>Combined Firewall and Gateway:</b>
+<blockquote><pre>#!/bin/sh
+### BEGIN INIT INFO
+# Provides: scriptname
+# Required-Start: $all
+# Required-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Start daemon at boot time
+# Description: Gateway and Firewall script.
+### END INIT INFO
+printf "Gateway/Firewall IPTables Script"
+
+printf "."
+# Variables.
+IPC=/sbin/iptables
+IF=eth1
+OF=eth0
+
+printf "."
+# Flush existing iptables setup.
+$IPC -F
+$IPC -X
+$IPC -Z
+$IPC -t nat -F
+$IPC -t mangle -F
+
+# LOCKDOWN: Set default policies to DROP.
+# INFO: No point adding -j ACCEPT rules if everything is open
+# to begin with. Policies takes action if no rules are matched.
+$IPC -P INPUT DROP
+$IPC -P FORWARD DROP
+
+printf "."
+# INPUT chain.
+# INFO:
+# Accept loopback traffic.
+# Accept IF traffic from IFNET.
+# Accept established connections from OF.
+# Accept SSH connections on OF.
+$IPC -A INPUT -i lo -j ACCEPT
+$IPC -A INPUT -i $IF -j ACCEPT
+$IPC -A INPUT -i $OF -m state --state ESTABLISHED,RELATED -j ACCEPT
+# $IPC -A INPUT -i $OF -p tcp --dport 22 -j ACCEPT
+
+printf "."
+# FORWARD chain.
+# INFO: Forward packets that has been accepted on INPUT chain above.
+$IPC -A FORWARD -i $IF -j ACCEPT
+$IPC -A FORWARD -i $OF -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+printf "."
+# Masquerade.
+# INFO: Dynamic SNAT - change source address of connections
+# from eth1 to eth0 since we are forwarding through.
+$IPC -t nat -A POSTROUTING -o $OF -j MASQUERADE
+
+# Preroute all DNS requests to our own dnsmasq service.
+# $IPC -t nat -A PREROUTING -p tcp --dport 53 -j REDIRECT --to-port 5353
+# $IPC -t nat -A PREROUTING -p udp --dport 53 -j REDIRECT --to-port 5353
+
+printf "."
+# Enable forwarding in kernel.
+# INFO: This is all you really need to have basic gateway functionality.
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+printf " Done.\n"
+</pre></blockquote><br>
+
+<b>Only Firewall:</b>
+<blockquote><pre>#!/bin/sh
+### BEGIN INIT INFO
+# Provides: scriptname
+# Required-Start: $all
+# Required-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Start daemon at boot time
+# Description: DJ Firewall Script.
+### END INIT INFO
+printf "DJFirewall"
+
+printf "."
+# Variables.
+IPC=/sbin/iptables
+IF=eth0
+
+printf "."
+# Flush existing iptables setup.
+$IPC -F
+$IPC -X
+$IPC -Z
+$IPC -t nat -F
+$IPC -t mangle -F
+
+# Set default policy if no rules are met.
+$IPC -P INPUT DROP
+
+printf "."
+$IPC -A INPUT -i lo -j ACCEPT
+$IPC -A INPUT -i $IF -m state --state ESTABLISHED,RELATED -j ACCEPT
+# $IPC -A INPUT -i $IF -p tcp --dport 22 -j ACCEPT
+# $IPC -A INPUT -i $IF -p tcp --dport 80 -j ACCEPT
+# $IPC -A INPUT -i $IF -p tcp --dport 443 -j ACCEPT
+
+printf " Done.\n"
+</pre></blockquote><br>
+
+<b>Temporary manual blocking of ports except for your own IP:</b>
+<blockquote><pre># iptables -A INPUT -p tcp -i eth0 -s my-ip --dport 80 -j ACCEPT
+# iptables -A INPUT -p tcp -i eth0 --dport 80 -j DROP</pre></blockquote>
+
+</div>
+
+<div id="footer"><script>footer();</script></div>
+
+</div>
+</body>
+</html>

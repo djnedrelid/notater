@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../index.css" rel="stylesheet" type="text/css">
+<script src="../index.js" type="text/javascript"></script>
+<title>thronic.com - AJAX Skjelett</title>
+</head>
+<body>
+
+<div id="header"><script>header();</script></div>
+
+<div id="main">
+
+<div id="main-menu-left">
+	<script>
+		backlink();
+		NotatMeny('ajax_skjelett.html');
+	</script>
+</div>
+
+<div id="main-content" style="text-align:left">
+<h1>AJAX / XHR Skjelett</h1><br>
+
+Ren (ingen rammeverk) startkode man kan bruke for å implentere XHR til å utføre AJAX operasjoner (snakke med serversiden uten å
+relaste nettsiden)<br><br>
+
+<blockquote><pre>function ajaxFunction() {
+	var xmlHttp;
+	if(window.XMLHttpRequest) {
+		xmlHttp=new XMLHttpRequest();
+	} else if (window.ActiveXObject) {
+		xmlHttp=new ActiveXObject("Msxml2.XMLHTTP");
+	} else {
+		alert("Your browser does not support AJAX!");
+		return false;
+	}
+	
+	xmlHttp.open("GET","links.txt",true);
+	xmlHttp.onreadystatechange=function() {
+		if(xmlHttp.readyState==4) {
+			document.getElementById('relatedLinks').innerHTML = xmlHttp.responseText;
+		}
+	}
+	xmlHttp.send(null);
+}</pre></blockquote><br>
+
+<b>HTML eksempelkode:</b><br>
+<blockquote><pre>&lt;div id="relatedLinks">This will be filled with the link in links.txt.&lt;/div>
+&lt;a href="#" onclick="ajaxFunction()">Click me to change div content&lt;/a>
+</pre></blockquote><br>
+
+<b>links.txt i eksemplet ovenfor:</b><br>
+<blockquote><pre>&lt;a href="http://www.domain.com/">The Domain!&lt;/a></pre></blockquote><br>
+
+<b>GET eksempel:</b><br>
+<blockquote><pre>xmlHttp.open("GET","getreceiver.php?foo=bar",true); 
+xmlHttp.send(null);</pre></blockquote><br>
+
+<b>POST eksempel:</b><br>
+<blockquote><pre>xmlHttp.open("POST","postreceiver.php",true);
+xmlHttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+xmlHttp.send('foo=bar');
+</pre></blockquote><br><br>
+
+Dette bør kun gjøres til datakilder i samme domene, et sikkerhetstilsyn i moderne nettlesere. Det har pleid å være måter å komme
+seg rundt dette (JSONP) men disse tingene forandrer seg stadig og bør evt. googles hvis man er nysgjerrig.
+
+</div>
+
+<div id="footer"><script>footer();</script></div>
+
+</div>
+</body>
+</html>

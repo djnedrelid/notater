@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../index.css" rel="stylesheet" type="text/css">
+<script src="../index.js" type="text/javascript"></script>
+<title>thronic.com - Plex Media Server Migration</title>
+</head>
+<body>
+
+<div id="header"><script>header();</script></div>
+
+<div id="main">
+
+<div id="main-menu-left">
+	<script>
+		backlink();
+		NotatMeny('misc_plex_media_server_migration.html');
+	</script>
+</div>
+
+<div id="main-content" style="text-align:left">
+<h1>Plex Media Server Migration</h1><br>
+
+The process I used to move Plex Media Server to another server - intact. This may of course not work if you're moving between very different operating systems.<br><br>
+
+<ol>
+	<li>Install and run PMS on the new server, then make sure to shut it down entirely after the initial post-install launch. Next, stop Plex Media Server from running on the old server.</li>
+	<li>Back up the registry key: <b>"Computer \ HKEY_CURRENT_USER \ Software \ Plex, Inc \ Plex Media Server"</b> on the old server and install it on the new one.</li>
+	<li>Copy all the AppData folders inside the Plex Media Server folder, except for the one named "Plug-ins", to the new server respectively. (tip: compress everything first to a single file, I recommend using 7-Zip).</li>
+</ol><br><br>
+
+PMS should have its old settings, metadata, libraries and cache intact when you start it on the new server. 
+<b>Just make sure the library paths are correct in advance, if you're not sure they'll be, then make sure you 
+disable the automatic emptying of trash after every scan before you perform the migration steps above.</b> 
+You'll find it in server settings under the "Library" menu-item.
+
+</div>
+
+<div id="footer"><script>footer();</script></div>
+
+</div>
+</body>
+</html>

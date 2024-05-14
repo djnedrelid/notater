@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../index.css" rel="stylesheet" type="text/css">
+<script src="../index.js" type="text/javascript"></script>
+<title>thronic.com - KVM Hypervisor Setup</title>
+</head>
+<body>
+
+<div id="header"><script>header();</script></div>
+
+<div id="main">
+
+<div id="main-menu-left">
+	<script>
+		backlink();
+		NotatMeny('linux_kvm_hypervisor_setup.html');
+	</script>
+</div>
+
+<div id="main-content" style="text-align:left">
+<h1>KVM Hypervisor Setup</h1><br>
+
+KVM(Kernel-based Virtual Machine) is a native GNU/Linux type 1 hypervisor. <br>
+It requires VT(x)/AMD-V support.<br><br>
+
+<b>Testing for virtualization support:</b><br>
+<blockquote><pre># egrep -c '(svm|vmx)' /proc/cpuinfo
+ ^ 0 = no support.</pre></blockquote><br>
+
+<b>Installing KVM on a clean Debian 9 installation (updated Dec '17):</b><br>
+<blockquote><pre># apt update; apt upgrade
+# apt install qemu-kvm libvirt-clients libvirt-daemon-system
+# usermod myuser -a -G libvirt-qemu,libvirt
+
+(GUI) # apt install xorg
+      # apt install --no-install-recommends openbox
+      # apt install virt-manager
+
+      ^ Minimal GUI with manual 'startx' control.
+</pre></blockquote><br>
+
+<b>Installing KVM and GUI on a clean Debian 8 installation (deprecated)):</b><br>
+<blockquote><pre># apt-get update; apt-get upgrade
+# apt-get install task-lxde-desktop
+# apt-get install qemu-kvm libvirt-bin bridge-utils virt-manager
+# usermod myuser -a -G kvm,libvirt
+
+	NOTE: While it's preferable to run a hypervisor system as clean as possible,
+	      it's nice to have local management available. And it's only about 2 GB.
+</pre></blockquote><br>
+
+<b>Enable autostart on host boot for a VM (can also be selected in GUI):</b><br>
+<blockquote><pre># virsh autostart vmName
+  ^ add --disable at the end to turn autostart off again.</pre></blockquote><br>
+
+<b>List VMs and current state:</b><br>
+<blockquote><pre># virsh list --all</pre></blockquote><br>
+
+<b>List snapshots for a VM:</b><br>
+<blockquote><pre># virsh snapshot-list vmName</pre></blockquote><br>
+
+<b>Graceful shutdown of a VM:</b><br>
+<blockquote><pre># virsh shutdown [name|id|uuid]
+  ^ use 'destroy' instead of 'shutdown' to power it off instead.
+    use 'start' to start it again.
+	
+# watch virsh list --all
+  ^ to monitor state.</pre></blockquote><br>
+
+<b>Export VM configuration:</b><br>
+<blockquote><pre># virsh dumpxml [name|id|uuid] > [filename].xml</pre></blockquote><br>
+
+<b>Import VM configuration:</b><br>
+<blockquote><pre># virsh define /path/to/[filename].xml
+  ^ This will define but not start the machine, edit xml first as needed on new host.</pre></blockquote><br>
+
+<fieldset><legend>Backups</legend>
+Full live backups can be easily and reliably done by using <a href="http://wiki.libvirt.org/page/Live-disk-backup-with-active-blockcommit" target="_blank">active blockcommit</a>.
+</fieldset><br><br>
+
+<b>Live QCOW2-based VM Backup (requires QEMU 2.1+, libvirt-1.2.9+)</b><br>
+<blockquote><pre># virsh domblklist vm1
+# virsh snapshot-create-as --domain vm1 guest-state1 \
+	--diskspec vda,file=/whatever/vm1_temp.qcow2 \
+	--disk-only --atomic
+
+Main disk file is now not currently used, back it up.
+Let's export the XML configuration as well to make it complete.
+# virsh domblklist vm1 (confirm using temporary disk)
+# cp /wherever/vm1.qcow2 /wherever_backup/vm1.qcow2
+  ^ use whatever tool preferred to copy the file.
+# virsh blockcommit vm1 vda --active --verbose --pivot
+# virsh domblklist vm1 (confirm back to main disk)
+# virsh snapshot-delete vm1 --metadata guest-state1
+# rm /whatever/vm1_temp.qcow2
+# virsh dumpxml vm1 > /wherever_backup/vm1.xml
+
+
+
+<b>How an automated script could look (specifically).
+Written for, and tested on one of my own guests:</b>
+--
+#!/bin/bash
+
+# Single VM Live Backup automation.
+# Requirements: QEMU 2.1+, libvirt-1.2.9+
+
+vmname="win2012R2"
+vm_diskloc="/var/lib/libvirt/images"
+backupdir="/media/dj/DAS"
+logdir="/media/dj/DAS"
+tmpdir="/tmp"
+snapshot_exceptions="--diskspec hdb,snapshot=no --diskspec hdc,snapshot=no"
+target_diskspec="hda"
+
+logtime=`date '+%d-%m-%Y-%H%M'`
+exec 1>${logdir}/${vmname}.${logtime}.log 2>&1
+
+echo "Moving machine to temporary disk ..."
+virsh domblklist ${vmname}
+virsh snapshot-create-as --domain ${vmname} guest-state1 --diskspec \
+ ${target_diskspec},file=${tmpdir}/${vmname}_tmp.qcow2 --disk-only --atomic \
+ ${snapshot_exceptions}
+virsh domblklist ${vmname}
+
+echo "Copying VM ..."
+cp ${vm_diskloc}/${vmname}.qcow2 ${backupdir}/${vmname}.${logtime}.qcow2
+
+echo "Commit temporary changes back to main disk and delete temporary snapshot ..."
+virsh blockcommit ${vmname} ${target_diskspec} --active --verbose --pivot
+virsh domblklist ${vmname}
+virsh snapshot-delete ${vmname} --metadata guest-state1
+rm ${tmpdir}/${vmname}_tmp.qcow2
+virsh dumpxml ${vmname} > ${backupdir}/${vmname}.${logtime}.xml
+
+echo "Cleaning up backups older than 30 days ..."
+find ${backupdir}/* -mtime +30 -type f -delete
+echo "Done."
+</pre></blockquote><br>
+
+No interruption in the live backup:<br>
+<a href="/gfx/notatbilder/kvm_live_backup1.jpg" target="_blank"><img src="./notatbilder/kvm_live_backup1.jpg"></a><br><br>
+
+<b>Converting a VHDX image (or even a physical /dev/disk) to QCOW2:</b><br>
+<blockquote><pre># qemu-img convert -p -O qcow2 [filename].vhdx /path/to/images/[filename].qcow2</pre></blockquote><br>
+
+<b>Extending a QCOW2 image:</b><br>
+<blockquote><pre># qemu-img resize hostname.qcow2 +100GB
+  ^ Shut down the VM first, of course. Extend internally afterwards.</pre></blockquote><br>
+
+<b>VirtIO Drivers for Windows Guests</b><br>
+<blockquote><pre><a href="https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/latest-virtio/" target="_blank">Stable Drivers Download</a>
+Mount the ISO inside the Windows guest. Using device manager - update drivers by pointing to
+the mounted ISO. Make sure to configure the machine to use Virtio first, if it makes sense.</pre></blockquote><br>
+
+<b>Running X11 virt-manager from a remote Windows client</b><br>
+<blockquote><pre># nano /etc/libvirt/libvirtd.conf
+  ^ auth_unix_ro = "none"
+    auth_unix_rw = "none"
+    auth_tcp = "sasl"
+
+# service libvirtd restart
+
+Download and install VcXsrv on the Windows client:
+https://sourceforge.net/projects/vcxsrv/
+
+Start XLaunch and fire up xterm and start GUI apps from there.
+If sudo privileges is needed with anything, use with param -E.</pre></blockquote><br>
+
+<b>A note about VirtIO</b><br>
+VirtIO drivers are paravirtualized drivers that acts as an abstraction layer over devices in KVM guests. Para-virtualization means the guest is partially aware of being a guest, and can
+send IO requests more efficiently to KVM as a hypervisor by working together with it. Fully virtualized VMs do not know they are being virtualized, causing more work for the
+hypervisor as it has to "trap" IO requests to hardware. A fully virtualized VM will have an emulation layer close to hardware level in its hypervisor, which is efficient, but highly
+complicated and less direct than a para-virtualized one.
+
+</div>
+
+<div id="footer"><script>footer();</script></div>
+
+</div>
+</body>
+</html>

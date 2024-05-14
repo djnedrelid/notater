@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../index.css" rel="stylesheet" type="text/css">
+<script src="../index.js" type="text/javascript"></script>
+<title>thronic.com - The Hexadecimal System</title>
+</head>
+<body>
+
+<div id="header"><script>header();</script></div>
+
+<div id="main">
+
+<div id="main-menu-left">
+	<script>
+		backlink();
+		NotatMeny('misc_the_hexadecimal_system.html');
+	</script>
+</div>
+
+<div id="main-content" style="text-align:left">
+<h1>The Hexadecimal System</h1><br>
+
+<b>Example of comparing an IP against a bitmask in PHP:</b><br>
+<blockquote><pre>$BlockedNetworks = array(ip2long("192.168.0.0"),
+	ip2long("10.0.0.0"));
+$BlockRange = ip2long("255.255.0.0");
+$VisitIP = ip2long($_SERVER['REMOTE_ADDR']);
+foreach ($BlockedNetworks as $BN) {
+	if (($VisitIP & $BlockRange) == $BN)
+		exit(); // or redirect or whatever you want.
+}
+</pre></blockquote><br>
+
+In the example above, any IP in the 192.168.x.x and 10.0.x.x ranges will be matched. The 255 numbers you see in masks represent
+all 8 bits in an octet being turned on, so comparing against it will always reserve the octet bits without turning them off. Meaning
+192.168.1.10 & 255.255.0.0 equals 192.168.0.0 because the last two octets will be turned off during comparison.<br><br><br>
+
+
+<b>How Does It Work?</b><br>
+Bitwise AND(& operator). It's what network masks are all about. It's the bitwise operator used in programming if you need to turn off
+a bit, by comparing to a off-bit/0.<br>
+<blockquote><pre>1 & 1 = 1
+1 & 0 = 0
+0 & 1 = 0
+</pre></blockquote><br>
+
+Here's a turned off byte/octet:<br>
+<blockquote><pre>[0 0 0 0 0 0 0 0] Which represents:
+[128 64 32 16 8 4 2 1] in decimal values when individually turned on.
+</pre></blockquote><br>
+
+To get 192 we need to turn on 128 + 64. The octet now looks like this:<br>
+<blockquote><pre>[1 1 0 0 0 0 0 0]</pre></blockquote><br>
+
+Now that we know how to convert binary into decimal, let's do the whole address:<br>
+<blockquote><pre>[11000000].[10101000].[00000001].[00001010] = 192.168.1.10</pre></blockquote><br>
+
+Let's put it on top of the mask and compare bits one by one:<br>
+<blockquote><pre>  [11000000].[10101000].[00000001].[00001010] (192.168.1.10)
+& [11111111].[11111111].[00000000].[00000000] (255.255.0.0)
+= [11000000].[10101000].[00000000].[00000000] (192.168.0.0)</pre></blockquote><br>
+
+As you see, when comparing 1 AND 1 it will stay 1, while 0 turns it off. Hence why 192.168.1.10 will equal 192.168.0.0 when using
+bitwise AND comparison. This should give a deeper understanding of network masks works in general and how they work in normal
+networking.<br><br><br>
+
+
+<b>A Quick Note on The Hexadecimal System</b><br>
+It's just a number system with a base of 16 instead of 2 and 10 (0-9 and a-f/A-F). E.g. a value like 0xABCD consists of a prefix (0x) to
+tell the parser it's actually a hexadecimal value, and the value itself. Since A follows after 9, its value is 10 - and so on up until
+15(F). So you got 10, 11, 12 and 13. <br><br>
+
+These are actually just easier ways of representing binary and decimal values since the base of
+16 is bigger. A B C and D represents groups of 4 binary bits with a base of 2, and those bits represents the same decimal values with a
+base of 10 as in the binary system. Knowing this, a convertion between them is always possible even if you choose to do it through
+math or just value mapping/representation.<br><br>
+
+<b>A Summary Illustration:</b><br>
+<blockquote><pre>Hexidecimal: 0xABCD
+ = Binary: 0x[1010][1011][1100][1101] > [8+2=10][8+2+1=11][8+4=12][8+4+1=13].
+ = Decimal: 0x[32768+0+8192+0][2048+0+512+256][128+64+0+0][8+4+0+1] = 43981.</pre></blockquote>
+
+</div>
+
+<div id="footer"><script>footer();</script></div>
+
+</div>
+</body>
+</html>

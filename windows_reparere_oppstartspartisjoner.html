@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../index.css" rel="stylesheet" type="text/css">
+<script src="../index.js" type="text/javascript"></script>
+<title>thronic.com - Reparere oppstartspartisjoner</title>
+</head>
+<body>
+
+<div id="header"><script>header();</script></div>
+
+<div id="main">
+
+<div id="main-menu-left">
+	<script>
+		backlink();
+		NotatMeny('windows_reparere_oppstartspartisjoner.html');
+	</script>
+</div>
+
+<div id="main-content" style="text-align:left">
+<h1>Reparere oppstartspartisjon for Windows</h1><br>
+
+Nyttig ved f.eks. kloning mellom maskiner eller mislykkede windows oppdateringer m.m.<br><br>
+
+<b>Fiksing av GPT UEFI oppstart for Windows ved å gj.oppbygge ESP (EFI System Partition):</b>
+<blockquote><pre>DISKPART> list disk
+DISKPART> sel disk 0 (vanligvis)
+DISKPART> detail disk
+DISKPART> sel vol 2 (vanligvis)
+DISKPART> del par override
+DISKPART> create par efi (og f.eks. size=500 hvis du vil begrense størrelse).
+DISKPART> format fs=fat32 quick label="ESP"
+DISKPART> set id=c12a7328-f81f-11d2-ba4b-00a0c93ec93b (egentlig ikke nødvendig).
+DISKPART> assign letter k
+DISKPART> exit
+
+//
+// Gj.oppbygging av EFI bootfiler til nybakt partisjon (oftest det eneste man trenger i tillegg til partisjonen ovenfor).
+//
+C:\> bcdboot c:\windows /s K: /f ALL
+
+//
+// Sette BCD konfigurasjon til nybakt partisjon (vanligvis ikke nødvendig).
+// Sjekk med kun bcdedit for å se at ESP peker greit til C partisjon, oftest er ting OK allerede.
+// Men dersom du må korrigere:
+//
+C:\> bcdedit /set {bootmgr} device partition=K:
+	^ NOTAT:
+	  Dersom du får "system device not found" booter du på nytt via UEFI dersom du nettopp har konvertert fra MBR.</pre></blockquote><br>
+
+<b>Det samme bare for MBR installasjoner:</b>
+<blockquote><pre>Fikse windows 10 MBR basert installasjon.
+=========================================
+1)
+	alternativ a) Fjern alle ekstra partisjoner utenom OS.
+		diskpart > sel disk N > sel vol N > active
+
+	alternativ b) Opprett en minst 500mb NTFS partisjon innenfor 2TB område og sett som aktiv.
+		diskpart > sel disk N > sel vol N (C) > shrink desired=1024
+		create par pri
+		format fs=ntfs quick label=SYSTEM
+		assign letter k
+		active
+		
+2)* X:\> bootsect /nt60 k: /force /mbr
+	NOTAT: (Ny MBR bootcode trengs kun hvis den har blitt korrupt,
+	        initialisering av MBR disker oppretter denne allerede).
+
+4)* X:\> bcdboot c:\windows /s k: /f ALL
+
+*) Bruk c hvis alternativ a med kun 1 partisjon, k hvis alternativ b med egen systempartisjon.
+   Hvis det blir flere oppstartsvalg i etterkant, kan de finnes og fjernes med bcdedit.</pre></blockquote><br>
+
+Man ser lett forskjell på MBR og EFI/UEFI systemer ved å sjekke partisjonstyper.<br>
+Oppstartspartisjon i NTFS = MBR, hvis FAT32 = EFI/UEFI.<br><br>
+
+Dette er fordi UEFI trenger å laste inn driver for NTFS før Windows kan laste, som de fleste hovedkort ikke inkluderer.<br><br>
+
+Dette er ikke one-size-fits-all løsning, da det kan være litt forskjellig kontekster hvor oppstartsproblemer finnes, men det vil være
+en kjerneløsning som kan løse alt av oppstartsproblemer direkte tilknyttet mislykkede kloninger, kloninger mellom PCer med
+forskjellig MBR/EFI oppsett osv. så lenge Windows sine BCD filer er intakte og at systemet ikke er for ødelagt. Hvor det evt. blir en
+helt annen problemstilling uansett, hvor reinstallering/gj.oppretting fra backup antagelig er eneste løsning. Ett unntak er
+problematiske drivere som amd/intel som f.eks. kan deaktiveres via autoruns i et WinPE miljø. Men da har det ikke noe å gjøre med 
+partisjoner heller lenger.
+
+</div>
+
+<div id="footer"><script>footer();</script></div>
+
+</div>
+</body>
+</html>

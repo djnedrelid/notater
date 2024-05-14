@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../index.css" rel="stylesheet" type="text/css">
+<script src="../index.js" type="text/javascript"></script>
+<title>thronic.com - Hyper-V Replication and Workgroups</title>
+</head>
+<body>
+
+<div id="header"><script>header();</script></div>
+
+<div id="main">
+
+<div id="main-menu-left">
+	<script>
+		backlink();
+		NotatMeny('windows_hyperv_replication.html');
+	</script>
+</div>
+
+<div id="main-content" style="text-align:left">
+
+<h1>Hyper-V Replication and Workgroups</h1><br>
+
+The following procedure is tested and verified on two servers running Windows Server 2012 R2.<br><br>
+
+<div style="text-align:center"><img src="./notatbilder/ReplicationDR.jpg"></div><br>
+
+There are two choices of replication. Kerberos (unencrypted replication on port 80 by default) is DOMAIN based, so since I want WORKGROUP based authentication I need to use HTTPS (encrypted on port 443). 
+First, you need to get makecert.exe from <a href="./downloads/makecert.zip">here</a> or from the latest Windows SDK <br><br>
+
+<strong>DJ-SERVER-W1 - ELEVATED CMD COMMANDS</strong><br>
+<blockquote><pre>makecert -pe -n "CN=DJ-SERVER-W1-RootCA" -ss root -sr LocalMachine -sky signature -r "DJ-SERVER-W1-RootCA.cer
+makecert -pe -n "CN=DJ-SERVER-W1" -ss my -sr LocalMachine -sky exchange -eku 1.3.6.1.5.5.7.3.1,1.3.6.1.5.5.7.3.2 -in "DJ-SERVER-W1-RootCA" -is root -ir LocalMachine -sp "Microsoft RSA SChannel Cryptographic Provider" -sy 12 "DJ-SERVER-W1.cer"
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Virtualization\Replication" /v DisableCertRevocationCheck /d 1 /t REG_DWORD /f</pre></blockquote><br>
+
+<strong>DJ-SERVER-W2 - ELEVATED CMD COMMANDS:</strong><br>
+<blockquote><pre>makecert -pe -n CN=DJ-SERVER-W2-RootCA -ss root -sr LocalMachine -sky signature -r "DJ-SERVER-W2-RootCA.cer"
+makecert -pe -n "CN=DJ-SERVER-W2" -ss my -sr LocalMachine -sky exchange -eku 1.3.6.1.5.5.7.3.1,1.3.6.1.5.5.7.3.2 -in "DJ-SERVER-W2-RootCA" -is root -ir LocalMachine -sp "Microsoft RSA SChannel Cryptographic Provider" -sy 12 "DJ-SERVER-W2.cer"
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Virtualization\Replication" /v DisableCertRevocationCheck /d 1 /t REG_DWORD /f</pre></blockquote><br>
+
+<strong>NOTES</strong><br>
+- DJ-SERVER-W1 and 2 are my hostnames/lmhosts.<br>
+- The makecert.exe commands automatically imports the certificates into MMC.<br>
+- The added registry key(s) is needed to disable revocation checks that doesn't work on self-signed.<br><br><br>
+
+
+<strong>Now to register the certificates across the servers</strong><br><br>
+
+Copy DJ-SERVER-W1-RootCA.cer to DJ-SERVER-W2 and from there run (elevated CMD):<br>
+<blockquote><pre>certutil -addstore -f Root "DJ-SERVER-W1-RootCA.cer"</pre></blockquote><br>
+
+Copy DJ-SERVER-W2-RootCA.cer to DJ-SERVER-W1 and from there run (elevated CMD):<br>
+<blockquote><pre>certutil -addstore -f Root "DJ-SERVER-W2-RootCA.cer"</pre></blockquote><br>
+
+Now you can choose the appropriate certificates in Hyper-V replication setup.<br>
+Remember to open both IN and OUT TCP 443 in the firewall on both servers.<br><br><br>
+
+
+<strong>NOTES</strong><br>
+- The makecert.exe parameter /e can be added to specify enddate (mm/dd/yy). The default is year 2040.<br>
+- makecert.exe is really a development tool for testing certificates. These work well in a private network as we don't need a "proper" authority.<br><br><br><br>
+
+<h2>Performing a failover (server failure scenario)</h2><br>
+
+<b>Procedure for secondary replica server to take over VM:</b><br>
+<ol>
+<li>Right-click VM and choose failover on last replication timestamp.</li>
+<li>VM will now start up on secondary replica server.</li>
+</ol><br>
+
+<b>Procedure for moving VM back to primary server:</b><br>
+<ol>
+<li>When the primary server is up and running again, stop/shut down VM on primary if it exists.</li>
+<li>Right-click and choose reverse replication on the secondary server back to primary.</li>
+<li>When done, turn off and right-click VM on secondary server and choose planned failover.</li>
+<li>Activate reverse replication and start up VM on the primary server.</li>
+</ol><br>
+
+<strong>NOTES</strong><br>
+- It's important to follow the process above in regards to avoid data loss. 
+It's important to let every step complete itself, as the replication steps may take some time to process.
+
+</div>
+
+<div id="footer"><script>footer();</script></div>
+
+</div>
+</body>
+</html>

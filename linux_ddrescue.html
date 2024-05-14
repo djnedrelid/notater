@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../index.css" rel="stylesheet" type="text/css">
+<script src="../index.js" type="text/javascript"></script>
+<title>thronic.com - ddrescue</title>
+</head>
+<body>
+
+<div id="header"><script>header();</script></div>
+
+<div id="main">
+
+<div id="main-menu-left">
+	<script>
+		backlink();
+		NotatMeny('linux_ddrescue.html');
+	</script>
+</div>
+
+<div id="main-content" style="text-align:left">
+<h1>Redde data fra disker med ddrescue</h1><br>
+
+Et verktøy jeg bruker ofte ved behov av grundig diskskraping etter data hvor det gjerne foreligger pending/realloc slitasje og hvor
+konvensjonelle metoder bare henger eller feiler, og hvor jeg ønsker eksakte sektordata. Jeg bruker det vanligvis via SystemRescue.<br><br>
+
+Det er verdt å nevne at mens dette er et av de beste verktøyene for å redde data fra en fysisk slitt/skadet disk, 
+må man vurdere hvor viktige data som ligger på disken. Er det ekstremt viktige data kan det være lurt å henvende seg til f.eks. 
+Ibas i stedet før man risikerer enda mer slitasje fra disk.<br><br>
+
+Dersom disk er grundig slettet/f.eks. overskrevet med 0-bytes, vil ingen kunne redde data fra den lenger, ddrescue er for disker som har 
+fått mekansisk slitasje og som henger/oppfører seg svært tregt hvor ddrescue er svært egnet til å hente alt som lar seg hente før 
+disk dør helt). Dette kan evalueres i forkant via hvilket som helst program som kan sjekke SMART diagnostikk fra disk.<br><br>
+
+<b>Eksempelbruk:</b>
+<blockquote><pre><b>ddrescue -r3 -n -N -v /dev/sda /dev/sdb logfile.log -f</b>
+
+<em>Parameterforklaring:</em>
+  -rN, --retry-passes N
+  -n, --no-scrape (skraping og trimming kan ta ekstremt lang tid (måneder)).
+  -N, --no-trim
+  -v, --verbose
+  -f, --force (ignorert for vanlige filer, bekrefter at du er villig til å overskrive måldisk).</pre></blockquote><br>
+
+<b>Bash eksempel hvis man vil skripte litt:</b>
+<blockquote><pre>#!/bin/bash
+
+lsblk
+ls -la /dev/disk/by-id/
+
+read -p "FRA disk, f.eks. sda: " fra_disk
+read -p "TIL disk, f.eks. sdb: " til_disk
+
+echo ""
+read -p "Vil du redde $fra_disk til $til_disk? " svar
+
+if [[ $svar != [yYjJ] ]]
+then
+	exit 1
+fi
+
+echo ""
+ddrescue -v -n -N -r3 /dev/$fra_disk /dev/$til_disk ddrescue.log -f
+
+echo ""
+sleep infinity</pre></blockquote>
+</div>
+
+<div id="footer"><script>footer();</script></div>
+
+</div>
+</body>
+</html>

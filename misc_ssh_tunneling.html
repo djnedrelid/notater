@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../index.css" rel="stylesheet" type="text/css">
+<script src="../index.js" type="text/javascript"></script>
+<title>thronic.com - SSH Tunneling</title>
+</head>
+<body>
+
+<div id="header"><script>header();</script></div>
+
+<div id="main">
+
+<div id="main-menu-left">
+	<script>
+		backlink();
+		NotatMeny('misc_ssh_tunneling.html');
+	</script>
+</div>
+
+<div id="main-content" style="text-align:left">
+<h1>SSH Tunneling</h1><br>
+
+Examples of using OpenSSH for both CLI access, SFTP AND Tunneling.<br>
+Avoid exposing vulnerable ports, and use encrypted tunneling instead.<br><br>
+
+<b>GNU/LINUX Scenario:</b><br>
+<blockquote><pre>Tunnel from localhost:7777 that goes through my SSHD server to remotehost:21 (FTP):
+ssh -L 7777:remotehost:21 myuser@remotehost</pre></blockquote><br>
+
+<b>GNU/LINUX Scenario:</b><br>
+Tunnel from remotehost:7777 that goes to my local webserver:80 (WWW):<br>
+<blockquote><pre>ssh -R 7777:localhost:80 myuser@remotehost</pre></blockquote><br>
+
+<b>WINDOWS Scenario:</b><br>
+Tunnel from localhost:7777 that goes through my SSHD server to remotehost:3389 (RDP):<br>
+<blockquote><pre>PuTTY > Connection > SSH > Tunnels > (Add source and destination:port)
+From Command Line:
+putty.exe -ssh <same command(s) as in GNU/Linux> -l user -pw password</pre></blockquote><br>
+
+Remote tunneling may require GatewayPorts yes in /etc/sshd_config. Add -fNT as a parameter if you only want to do background port forwarding without opening a shell.
+
+</div>
+
+<div id="footer"><script>footer();</script></div>
+
+</div>
+</body>
+</html>

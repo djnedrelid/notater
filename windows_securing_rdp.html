@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../index.css" rel="stylesheet" type="text/css">
+<script src="../index.js" type="text/javascript"></script>
+<title>thronic.com - Securing RDP</title>
+</head>
+<body>
+
+<div id="header"><script>header();</script></div>
+
+<div id="main">
+
+<div id="main-menu-left">
+	<script>
+		backlink();
+		NotatMeny('windows_securing_rdp.html');
+	</script>
+</div>
+
+<div id="main-content" style="text-align:left">
+	<h1>Securing RDP</h1><br>
+	
+	Mostly relevant from Windows 7/2008(R2) and up. Steps you can take to secure RDP traffic. Don't forget setting a 
+	good password as well if you open up your own server for Internet access (12+ characters long, and not just 
+	alphanumeric). <br><br>
+	
+	<h2>Don't Make It Obvious</h2>
+	Change your port to something else than 3389 (preferably something available between 1024 and 65535). You can 
+	then forward it to your server at 3389 in your firewall and/or router in your network. To connect to this new port in your 
+	client, just use IP:PORT (e.g. 127.0.0.1:1234).<br><br>
+	
+	<h2>Group Policy Editor (gpedit.msc)</h2>
+	Computer Configuration > Administrative Templates > Windows Components > Remote Desktop Services > Remote
+	Desktop Session Host > Security<br><br>
+	
+	<b>Set client connection encryption level</b><br>
+	- Enabled<br>
+	- High<br><br>
+	
+	<b>Require secure RPC communication</b><br>
+	- Enabled<br><br>
+	
+	<b>Require use of specific security layer for remote connections</b><br>
+	- Enabled<br>
+	- SSL (TLS 1.0)<br><br>
+	
+	<b>Require user authentication for remote connections by NLA (Network Layer Authentication)</b><br>
+	- Enabled (You can check support for this by clicking on client mstsc upper left icon - "About". It will state support,
+	and should be at least version 6 on clients.)<br><br><br>
+	
+	
+	<h2>Local Security Policy (secpol.msc)</h2>
+	Account Policies > Account Lockout Policies<br><br>
+	
+	<b>Set tries to 3-10</b><br>
+	The other 2 options will (should) suggest a value of 30min waiting period, which is fine. Adapt as wanted.<br><br><br>
+	
+	
+	<h2>Additional measures</h2>
+	Computer Configuration > Windows Settings > Security Settings > Local Policies > Security Options<br><br>
+	
+	<b>Accounts: Give a new name to the Administrator account.</b><br>
+	- Try to make it non-intuitive, and match it with a good password.<br><br><br><br>
+	
+	
+	Regardless of all these precautions, RDP still opens up for NTLM brute force attacks. It can even be wise to go as far
+	as blocking all NTLM traffic in general if your machine is exposed on public networks. An option to continue using
+	RDP is to set up site-to-site VPN between target networks instead of exposing RDP directly to the Internet.
+</div>
+
+<div id="footer"><script>footer();</script></div>
+
+</div>
+</body>
+</html>
