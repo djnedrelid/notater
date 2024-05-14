@@ -15,7 +15,7 @@ The following procedure is tested and verified on two servers running Windows Se
 <div style="text-align:center"><img src="./notatbilder/ReplicationDR.jpg"></div><br>
 
 There are two choices of replication. Kerberos (unencrypted replication on port 80 by default) is DOMAIN based, so since I want WORKGROUP based authentication I need to use HTTPS (encrypted on port 443). 
-First, you need to get makecert.exe from <a href="./downloads/makecert.zip">here</a> or from the latest Windows SDK <br><br>
+First, you need to get makecert.exe from <a href="./vedlegg/makecert.zip">here</a> or from the latest Windows SDK <br><br>
 
 <strong>DJ-SERVER-W1 - ELEVATED CMD COMMANDS</strong><br>
 <blockquote><pre>makecert -pe -n "CN=DJ-SERVER-W1-RootCA" -ss root -sr LocalMachine -sky signature -r "DJ-SERVER-W1-RootCA.cer
