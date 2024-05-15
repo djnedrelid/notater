@@ -18,6 +18,7 @@
 **Webutvikling**  
 [HTML Skjelett (N)](https://djnedrelid.github.io/notater/html_skjelett.html)  
 [AJAX Skjelett (N)](https://djnedrelid.github.io/notater/ajax_skjelett.html)  
+[CSS Flyout Menus](https://djnedrelid.github.io/notater/css_flyout_menus.html)  
 
 **Diverse**  
 [Plex Media Server Migration](https://djnedrelid.github.io/notater/misc_plex_media_server_migration.html)  

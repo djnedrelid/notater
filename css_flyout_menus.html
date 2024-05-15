@@ -1,0 +1,214 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="https://thronic.com/index.css" rel="stylesheet" type="text/css">
+<script src="https://thronic.com/index.js" type="text/javascript"></script>
+<title>thronic.com - CSS Flyout Menus</title>
+<style type="text/css">
+<!--
+/*
+ *	HORIZONTAL
+ */
+LI {
+	margin-bottom: 0px !important;
+}
+#navwrapper {
+ position: relative;
+ background: #AA0000;
+ border-width: 0px;
+ border-style: solid;
+ border-color: #ccc #ccc #555 #bbb;
+ margin: 5px 0px 5px 0px;
+}
+
+#navwrapper ul {
+ list-style: none;
+ margin: 0;
+ padding: 0;
+ float: left;
+}
+
+#navwrapper a {
+ display: block;
+ background: #5C5C5C;
+ border-width: 1px;
+ border-style: solid;
+ border-color: #ccc #000 #000 #bbb;
+ text-decoration: none;
+ margin: 0;
+ padding: 2px 5px;
+ color: #ffffff;
+}
+
+#navwrapper a:hover {
+ background: #282828;
+}
+
+#navwrapper li {position: relative;}
+
+#navwrapper ul ul {
+ position: absolute;
+ z-index: 500;
+ width: 150px;
+ left: 0px;
+}
+
+#navwrapper ul ul ul {
+ position: absolute;
+ top: 0;
+ left: 100%;
+ width: 150px;
+}
+
+#navwrapper ul ul,
+#navwrapper ul li:hover ul ul,
+#navwrapper ul ul li:hover ul ul
+{display: none;}
+
+#navwrapper ul li:hover ul,
+#navwrapper ul ul li:hover ul,
+#navwrapper ul ul ul li:hover ul
+{display: block;}
+
+
+/*
+ *	VERTICAL
+ */
+#navwrapper2 {
+ width: 120px;
+ margin-bottom: 3px;
+ border-width: 0px;
+ border-style: solid;
+ border-color: #ccc #ccc #555 #bbb;
+}
+
+#navwrapper2 ul {
+ list-style: none;
+ margin: 0;
+ padding: 0;
+}
+
+#navwrapper2 a {
+ display: block;
+ width: 109px;
+ background-image: url("notatbilder/button_munder.gif");
+ margin: 0;
+ padding: 2px 1px 1px 10px;
+ font-family: Verdana, Arial, Helvetica, sans-serif;
+ font-size: 10px;
+ font-weight: normal;
+ text-decoration: none;
+ color: #eeeeee;
+}
+
+#navwrapper2 a:hover {
+ background-image: url("notatbilder/button_mover.gif");
+ color: #ffffff;
+}
+
+#navwrapper2 li {position: relative;}
+
+#navwrapper2 ul ul {
+ position: absolute;
+ z-index: 500;
+ top: 0;
+ width: 120px;
+ left: 100%;
+}
+
+#navwrapper2 ul ul ul {
+ position: absolute;
+ top: 0;
+ left: 100%;
+ width: 100%;
+}
+
+#navwrapper2 ul ul,
+#navwrapper2 ul li:hover ul ul,
+#navwrapper2 ul ul li:hover ul ul
+{display: none;}
+
+#navwrapper2 ul li:hover ul,
+#navwrapper2 ul ul li:hover ul,
+#navwrapper2 ul ul ul li:hover ul
+{display: block;}
+-->
+</style>
+
+<!--[if IE]>
+<style type="text/css" media="screen">
+body {behavior: url(notatbilder/csshover.htc);}
+#navwrapper2 ul li {float: left; width: 100%;}
+#navwrapper2 ul li a {height: 1%;}
+</style>
+<![endif]-->
+</head>
+<body>
+
+<h1>CSS Flyout Menus</h1><br>
+
+Utilizes csshover.htc (not required for modern browsers) for old IE support which you can read more about here. It's otherwise just pure CSS (hover) and simple unordered list
+structures. The Example supports 4 levels by default.<br><br>
+
+<b>Main parts</b><br>
+<blockquote><pre>#navwrapper ul ul, // Hide second menu by default.
+#navwrapper ul li:hover ul ul, // Hide third menu on hovering first.
+#navwrapper ul ul li:hover ul ul // Hide fourth menu on hovering second.
+{display: none;}
+
+#navwrapper ul li:hover ul, // Show second menu on hovering first.
+#navwrapper ul ul li:hover ul, // Show third menu on hovering second.
+#navwrapper ul ul ul li:hover ul // Show fourth menu on hovering third.
+{display: block;}</pre></blockquote><br>
+
+Then just style them as you like. Refer to example code for illustration.<br><br>
+
+<div id="navwrapper">
+<ul><li><a href="index.php">Frontpage</a></li></ul>
+
+<ul>
+ <li><a href="#">The business</a>
+  <ul>
+   <li><a href="#">About us</a></li>
+   <li><a href="#">Contact us</a></li>
+   <li><a href="#">Reports</a>
+    <ul>
+     <li><a href="#">Report 1</a></li>
+     <li><a href="#">Report 2</a></li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+<ul><li><a href="#">Links</a></li></ul>
+</div>
+
+<br><br>
+
+<div id="navwrapper2">
+<ul><li><a href="index.php">Frontpage</a></li></ul>
+
+<ul>
+ <li><a href="#">The business</a>
+  <ul>
+   <li><a href="#">About us</a></li>
+   <li><a href="#">Contact us</a></li>
+   <li><a href="#">Reports</a>
+    <ul>
+     <li><a href="#">Report 1</a></li>
+     <li><a href="#">Report 2</a></li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+<ul><li><a href="#">Links</a></li></ul>
+</div>
+
+
+
+</body>
+</html>
