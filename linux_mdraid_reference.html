@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="https://thronic.com/index.css" rel="stylesheet" type="text/css">
+<script src="https://thronic.com/index.js" type="text/javascript"></script>
+<title>thronic.com - MD RAID Basic Reference</title>
+</head>
+<body>
+
+<h1>MD RAID Basic Reference</h1><br>
+
+A personal reference for using MD RAID and some notes about RAID in general.<br><br>
+
+<h3>Hardware RAID</h3>
+Hardware controllers should have BBU (Battery Backup Unit) super capacitor protected flash cache for write-cache protection. Hardware RAID like SmartArray, LSI, Adaptec, PERC
+and MegaRAID together with drives in hot swap enclosures, can often support "Blind Hot Swap" making rebuild/resilver possible without taking drives offline in the OS first. Hardware
+has isolated memory cache that's unaffected by OS memory dumps and kernal panics. Good controllers may also have the best IO command queue depths for performance for heavy
+loads. Hypervisors like Hyper-V has no real alternative other than Hardware RAID. If a hardware controller goes bad, another similar model is required or the array is lost. You should
+also be careful about using a mixed bag of hardware stack (e.g. consumer MB, random expander, random backplane, random cables, usually 90% of homelab equipment). Hardware
+controllers thrive best on enterprise hardware from a single vendor that's made to work well together. Mixing hardware is safer with software RAID where you engineer a lot of the
+functionality yourself and take responsibility for most monitoring and critical choices that a controller would do for you. A very popular thing in software RAID is to use a slower
+expander, which is not a good idea for hardware RAID but may work great for software (e.g. 9211-8i IT FW with HP Expander v1.56+ which will work great with large drives at 3
+Gbps/SATA2 from the 6Gbps controller.<br><br>
+
+<h3>Software RAID</h3>
+Software RAID has few enterprise options. MD RAID is one of them, but requires careful administration. Hot swap is supported if drives are suspended with hdparm first. Software
+RAID is exposed to host OS instability as it depends on CPU and RAM resources, so it should also be protected by UPS. MD arrays can be easily moved to other hardware and be
+quickly reassembled.<br><br>
+
+<h3>FakeRAID</h3>
+FakeRAID is OEM vendor-wrapped motherboard chipset software that requires an OS driver to work. It's basically using hardware, with software, to fake hardware. Real hardware
+controllers will have cpu and memory specs in their datasheet and will act as a full physical abstraction layer that never shows you unconfigured individual drives.<br><br>
+
+Both FakeRAID and Hardware will commonly have a CTRL+R type boot option to handle the RAID configuration. SMART monitoring with smartmontools is usually possible with fakeand software RAID. Hardware may have good notification options through IPMI like Fujitsu's iRMC, HP's iLO, Dell's iDRAC or other OOB methods.<br><br>
+
+<h3>RAID is not a backup, it's fault tolerance & performance</h3>
+Keep in mind that parity is high-impact on drives. Every disk needs to be read during a rebuild. Consumer SATA drives are rated at 10^14/1E14 (12 TB) reads, while enterprise is
+10^15/1E15 (114 TB) reads, before experiencing an URE (Unrecoverable Read Error). That means if going by spec that using RAID5 with 12TB drives, you would on average break
+your array on every rebuild (but in practical terms it won't and is a blown up issue). I prefer stripe or mirror based RAID levels 0,1 and 10 for spinning drives (6 if I'm being cheap). 5 is
+still OK for SSDs as there's no chance for an URE. 5 & 6 (parity based) is cheap and high-capacity. 10 is the safer (by a huge margin) and also faster to rebuild.<br><br>
+
+Also, 1+N parity needs to <a href="https://mirrors.edge.kernel.org/pub/linux/kernel/people/hpa/raid6.pdf" target="_blank">implement probability patterns</a> to properly handle more than a single drive failure.<br><br>
+
+Dreaded Array Confusion/DAC is another thing that can happen with parity based configurations. It's when a random confusion between by firmware, controllers, drives, memory
+and/or disk errors happens that triggers an accidental array-wide sector wipe. This is mainly a concern for parity based RAID levels where every bit is needed for XOR calculations.
+Have a good backup strategy for any RAID configuration.<br><br>
+
+Tune write speed with write cache modifications (common values range from 512 to 32K):<br>
+<code>echo N > /sys/block/[your_array]/md/stripe_cache_size</code> (on arrays where it can be applied).<br><br>
+
+<b>NOTE:</b> * is used as illustrated multicard for /dev/sd[whatever], don't use it blindly.<br><br>
+
+<b>I like to make sure grub is installed on all drives (if bootable array).</b><br>
+<blockquote><pre># grub-install /dev/sd*N
+
+^ Repeat for every drive in RAID array related to boot partition.
+  This should be done after every new software RAID creation and adding of drives(!).
+  
+NOTE: If you get a warning like:
+warning: Couldn't find physical volume ‘(null)’. Some modules may be missing
+
+Know that it's just a warning. Once the raid is done rebuilding, and system rebooted.
+The warnings should be gone. Tested OK. I've done several simulations on virtual machines,
+including removal of several disks to see what actually happens, and that this is needed.</pre></blockquote><br>
+
+<b>To remove a drive, all its partitions need to be marked as failed first:</b><br>
+<blockquote><pre># mdadm --manage /dev/md* --fail /dev/sd*N
+
+^ This is needed when a failed drive is only partially failed, and a part of other arrays.
+  Because it's not allowed for mdadm to remove a healthy partition, we tell it explicitly
+  that the drive has failed.</pre></blockquote><br>
+
+<b>Removing a drive from RAID:</b><br>
+<blockquote><pre># mdadm --manage /dev/md* -r /dev/sd*N (Do for all arrays it's a part of)</pre></blockquote><br>
+
+<b>Generate SMART log:</b><br>
+<blockquote><pre># smartctl -H /dev/sd* (for quick health check)
+# smartctl -x /dev/sd* > smart.log
+# smartctl -x /dev/sd* | mail -s 'SMART Log' myself@server.com</pre></blockquote><br>
+
+<b>Serial Number for figuring out which physical drive:</b><br>
+<b>TIP:</b> Note down all serial numbers matching /dev/sd* on initial setups, so you already know it if a drive fails.<br>
+<blockquote><pre># /sbin/udevadm info --query=property --name=sda | grep ID_SERIAL
+^ Alternatively #ls -la /dev/disk/by-id/*</pre></blockquote><br>
+
+<h3>You'd turn off server at this point, change drive, reboot. If hotswap, put drive in standby (# hdparm -Y /dev/sd*). 
+Remove the SATA cable first, then power and vice versa.</h3><br>
+
+<b>Checking what the new drive is called:</b><br>
+<blockquote><pre># fdisk -l | grep sd
+# mdadm --detail /dev/md* (To help figure out which one it is)</pre></blockquote><br>
+
+<b>Recreate partition scheme to new drive from an existing:</b><br>
+<blockquote><pre>MBR: # sfdisk -d /dev/sda | sfdisk /dev/sd*; sfdisk -R /dev/sd*
+GPT: # sgdisk -R /dev/sd* /dev/sda; sgdisk -G /dev/sd*</pre></blockquote><br>
+
+<b>Adding new drive to RAID:</b><br>
+<blockquote><pre># mdadm /dev/md* -a /dev/sd* (Do for all arrays it should be a part of)
+# grub-install /dev/sd* (maybe superfluous, but doesn't hurt)
+# grub-mkdevicemap -n</pre></blockquote><br>
+
+<b>Make sure /etc/mdadm/mdadm.conf is updated:</b>
+<blockquote><pre># mdadm --detail --scan
+^ paste result into respective config file bottom area.</pre></blockquote><br>
+
+<b>Rebuild can be monitored with:</b><br>
+<blockquote><pre># watch cat /proc/mdstat</pre></blockquote><br>
+
+<b>Growing and shrinking an array can be done with --grow and --raid-devices</b><br>
+<b>NOTE:</b> This can only be done on an unmounted array. Good for storage RAIDs etc.<br>
+In this example I'll increase a RAID10 array by adding 2 new mirrored drives to it.<br>
+<blockquote><pre># umount /dev/md1
+# wipefs -a /dev/sdc; wipefs -a /dev/sdd
+# mdadm --add-spare /dev/md1 /dev/sdc
+# mdadm --add-spare /dev/md1 /dev/sdd
+# mdadm --grow /dev/md1 --raid-devices=6
+# cat /proc/mdstat (wait for reshape to be done)
+# gparted
+ ^ I choose gparted for simplicity, I'm a fan of using effective graphical tools when I can.
+   It will automagically suggest resizing md0p1 and help creating a partition and filesystem.
+   Look up parted (recommended) or fdisk if you only use CLI.</pre></blockquote><br>
+   
+<b>You can shrink the same array like this:</b><br>
+<b>NOTE:</b> This can only be done on an unmounted array as well.<br>
+In this example I'll take away the 2 drives I added above.<br>
+<blockquote><pre># umount /whatever &lt;- EXTREMELY IMPORTANT, GUARANTEED DATA LOSS OTHERWISE(!)
+# gparted
+  ^ Use to resize down to safe size you'll be left with.
+# umount /whatever (gparted has a tendency to remount)
+
+# mdadm --grow /dev/md1 --raid-devices=4
+  ^ Will suggest what value to use with --array-size
+# mdadm --grow /dev/md1 --array-size N
+# mdadm --grow /dev/md1 --raid-devices=4
+# cat /proc/mdstat (wait for reshape to be done)
+
+# mdadm --detail /dev/md1 (2 drives will become spares)
+# mdadm --manage /dev/md1 --remove /dev/sd* (the spares)
+# gdisk (choose /dev/md1 and go 'e','r' then 'd' use main GPT header) - save with 'w'.
+# gparted (resize and save)
+
+I had to do the gdisk step before gparted would work with it, YMMV.
+No problem afterwards. Data on the partition was intact. e2fsck OK.</pre></blockquote><br>
+
+<b>Updating /etc/fstab with an automatic mount point</b><br>
+<blockquote><pre># blkid (to get UUID needed)
+# nano /etc/fstab
+^ add something like this at the end:
+  UUID=3dd8f9fa-08ff-4af8-8e93-2881aad79b0f /MOUNTPOINT auto rw,user,auto 0 0</pre></blockquote><br>
+  
+<b>SPECIAL illustration from a Hetzner server that for some reason uses a RAID1 + RAID10 setup:</b><br><br>
+
+<blockquote><pre># cat /proc/mdstat
+Personalities : [raid1] [raid10]
+md3 : active raid10 sdd4[0] sda4[3] sdc4[2] sdb4[1]
+ 5684112384 blocks super 1.2 512K chunks 2 near-copies [4/4] [UUUU]
+ resync=DELAYED
+ bitmap: 43/43 pages [172KB], 65536KB chunk
+
+md2 : active raid10 sdd3[0] sda3[3] sdc3[2] sdb3[1]
+ 2111569920 blocks super 1.2 512K chunks 2 near-copies [4/4] [UUUU]
+ [>....................] resync = 4.2% (89320000/2111569920) finish=318.8min speed=105709K/sec
+ bitmap: 16/16 pages [64KB], 65536KB chunk
+
+md1 : active raid1 sdd2[0] sda2[3] sdc2[2] sdb2[1]
+ 523712 blocks super 1.2 [4/4] [UUUU]
+
+md0 : active (auto-read-only) raid1 sdd1[0] sda1[3] sdc1[2] sdb1[1]
+ 8380416 blocks super 1.2 [4/4] [UUUU]
+
+unused devices: &lt;none>
+
+^ Output above is taken right after a fresh setup at Hetzner.
+  [UUUU] shows that all drives are fine. If there's a missing
+  or damaged drive, it will show up as [UUU_] where _ represents
+  bad or missing drives.</pre></blockquote><br>
+  
+<b># cat /etc/fstab</b><br>
+<blockquote><pre>proc /proc proc defaults 0 0
+/dev/md/0 none swap sw 0 0
+/dev/md/1 /boot ext3 defaults 0 0
+/dev/md/2 / ext4 defaults 0 0
+/dev/md/3 /home ext4 defaults 0 0
+
+^ Output above shows how the RAID arrays are mounted and used in this example.</pre></blockquote><br>
+
+<b># mdadm --detail /dev/md1 (RAID 1 array)</b><br>
+<blockquote><pre>/dev/md1:
+        Version : 1.2
+  Creation Time : Tue Jan 31 19:45:19 2017
+     Raid Level : raid1
+     Array Size : 523712 (511.52 MiB 536.28 MB)
+  Used Dev Size : 523712 (511.52 MiB 536.28 MB)
+   Raid Devices : 4
+  Total Devices : 4
+    Persistence : Superblock is persistent
+    
+	Update Time : Wed Feb 1 22:24:49 2017
+          State : clean
+ Active Devices : 4
+Working Devices : 4
+ Failed Devices : 0
+  Spare Devices : 0
+ 
+           Name : rescue:1
+           UUID : a11746d6:7dda85b6:b17da174:74d6f7c2
+         Events : 25
+ 
+ Number Major Minor RaidDevice State
+   0      8    50       0      active sync /dev/sdd2
+   1      8    18       1      active sync /dev/sdb2
+   2      8    34       2      active sync /dev/sdc2
+   3      8     2       3      active sync /dev/sda2</pre></blockquote><br>
+   
+<b># mdadm --detail /dev/md3 (RAID10 array)</b><br>
+<blockquote><pre>/dev/md3:
+        Version : 1.2
+  Creation Time : Tue Jan 31 19:45:23 2017
+     Raid Level : raid10
+     Array Size : 7533800448 (7184.79 GiB 7714.61 GB)
+  Used Dev Size : 3766900224 (3592.40 GiB 3857.31 GB)
+   Raid Devices : 4
+  Total Devices : 4
+    Persistence : Superblock is persistent
+ 
+  Intent Bitmap : Internal
+    
+	Update Time : Thu Feb 2 18:39:20 2017
+          State : clean
+ Active Devices : 4
+Working Devices : 4
+ Failed Devices : 0
+  Spare Devices : 0
+         
+		 Layout : near=2
+     Chunk Size : 512K
+           
+		   Name : rescue:3
+           UUID : f5d2b235:8f514355:f069c3cd:48360d55
+         Events : 20323
+ 
+ Number Major Minor RaidDevice State
+    0     8     52      0      active sync set-A /dev/sdd4
+    1     8     20      1      active sync set-B /dev/sdb4
+    2     8     36      2      active sync set-A /dev/sdc4
+    3     8     4       3      active sync set-B /dev/sda4</pre></blockquote><br>
+ 
+set-A and set-B are mirrored sets, striped to eachother. This means that any mirror from each of the sets can be missing at the same time with the possibility to rebuild without data
+loss. As long as there's a complete mirrored set available, RAID1+0 can be rebuilt. So, SDA+SDC, SDA+SDD, SDB+SDC, SDB+SDD can all be missing at the same time without
+data loss, since there will be a mirror available.<br><br>
+
+<b>Illustration of above setup:</b><br>
+<blockquote><pre> SDA    SDB     SDC     SDD
+  M      M       M       M    md0 = RAID1 = All Mirrored partitions.
+  M      M       M       M    md1 = RAID1 = All Mirrored partitions.
+============================
+| M      M   S   M       M |  md2 = RAID10 = Striped Mirrored partitions.
+============================
+| M      M   S   M       M |  md3 = RAID10 = Striped Mirrored partitions.
+============================
+
+^ This would make /boot and swap extra sturdy, as they have twice the redundancy. Which may
+  make it easier to deal with a degraded / and /home than a corrupted boot area if the server
+  won't even boot and by chance does reboot before action can be taken.</pre></blockquote><br>
+  
+<b>The following is also RAID10, but it may NOT be what you want! Once you get to 6+ drives:</b><br>
+<blockquote><pre># mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/{sda,sdb}
+# mdadm --create /dev/md1 --level=1 --raid-devices=2 /dev/{sdc,sdd}
+# mdadm --create /dev/md2 --level=1 --raid-devices=2 /dev/{sde,sdf}
+# mdadm --create /dev/md3 --run --level=0 --raid-devices=3 /dev/{md0,md1,md2}
+
+The problem is obvious when you see it like this:
+=============================================================
+| M    M    |    S    |    M    M    |    S    |    M    M  |
+=============================================================
+^ You can loose 1 drive in every mirror = 3 drives.
+
+While a simpler one-line --level=10 setup looks like this (will create 2 sets):
+# mdadm --create --level=10 --raid-devices=6 /dev/{sda,sdb,sdc,sdd,sde,sdf}
+===========================================
+M    M    M    |    S    |    M    M    M |
+===========================================
+^ Now you can loose an extra drive (x4 total) safely compared to above.
+  However, using bigger spans rather than straight 1+0 in pairs also decreases capacity.</pre></blockquote><br>
+  
+<b>Removing an array:</b><br>
+<blockquote><pre># mdadm --stop /dev/md0
+# mdadm --remove /dev/md0
+# mdadm --zero-superblock /dev/sd* (optional)</pre></blockquote><br>
+
+<b>Using smartmontools to send an e-mail when a SMART failure has happened.</b><br>
+I'm setting check interval to 30min and automatic mail when SMART error is found:<br>
+<blockquote><pre># apt-get install smartmontools
+# nano /etc/smartmontools/run.d/10mail
+  ^ Edit the mail command to include -a "FROM:mail@mail.com" or whatever accepted relay is.
+    Maybe you don't need it, but I did when using Zoho as a mail relayer instead of gmail.
+
+# nano /etc/default/smartmontools
+  ^ start_smartd=yes
+    smartd_opts="--interval=1800"
+
+# nano /etc/smartd.conf
+  ^ DEVICESCAN -d removable -n standby -m mymail@gmail.com -M test -M exec /usr/share/smartmontools/smartd-runner
+  ^ Remove '-M test' after using it to test if mails can get through. It's just for testing SMART mail error send.
+
+# service smartd stop/start to test etc.</pre></blockquote><br>
+
+<b>Setting up mdadm e-mail alerts when there's a RAID problem:</b><br>
+<blockquote><pre># nano /etc/mdadm/mdadm.conf
+ ^ MAILADDR your@mail.com
+
+Test e-mail functionality:
+# killall mdadm
+# mdadm --monitor /dev/md0 --test
+  ^ Mail should arrive. CTRL+C when received, or if it takes too long, then troubleshoot your MTA.
+
+NOTE:
+You may have to disable ipv6 if you get AAAA lookup errors in journalctl. In Debian:
+# nano /etc/sysctl.conf
+  ^ net.ipv6.conf.all.disable_ipv6 = 1
+    net.ipv6.conf.default.disable_ipv6 = 1
+    net.ipv6.conf.lo.disable_ipv6 = 1
+
+Restart mdadm after testing e-mail alerts.
+# service mdmonitor start</pre></blockquote><br>
+
+<b>Reassembly of a RAID after moving it to another server:</b><br>
+<blockquote><pre># mdadm --assemble --scan</pre></blockquote>
+
+</body>
+</html>

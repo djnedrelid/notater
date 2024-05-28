@@ -6,6 +6,7 @@
 [ddrescue (N)](https://djnedrelid.github.io/notater/linux_ddrescue.html)  
 [Iptables Firewall and Gateway](https://djnedrelid.github.io/notater/linux_iptables_firewall_and_gateway.html)  
 [KVM Hypervisor Setup](https://djnedrelid.github.io/notater/linux_kvm_hypervisor_setup.html)  
+[MD RAID Basic Reference](https://djnedrelid.github.io/notater/linux_mdraid_reference.html)  
 
 **Microsoft Windows**  
 [Common Run Commands](https://djnedrelid.github.io/notater/windows_common_commands.html)  
