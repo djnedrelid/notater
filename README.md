@@ -1,7 +1,5 @@
 ﻿## Diverse notater  
 
-**En liten samling notater skrevet over tid til diverse formål.**  
-
 **GNU/Linux**  
 [ddrescue (N)](https://djnedrelid.github.io/notater/linux_ddrescue.html)  
 [Iptables Firewall and Gateway](https://djnedrelid.github.io/notater/linux_iptables_firewall_and_gateway.html)  
@@ -15,6 +13,7 @@
 [Norske tegn i batch (N)](https://djnedrelid.github.io/notater/windows_batch_norske_tegn.html)  
 [Reparere BCD (N)](https://djnedrelid.github.io/notater/windows_reparere_oppstartspartisjoner.html)  
 [Securing RDP](https://djnedrelid.github.io/notater/windows_securing_rdp.html)  
+[UAC Starting at Boot](https://djnedrelid.github.io/notater/windows_boot_elevated_program.html)  
 
 **Webutvikling**  
 [HTML Skjelett (N)](https://djnedrelid.github.io/notater/html_skjelett.html)  

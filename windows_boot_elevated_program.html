@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="https://thronic.com/index.css" rel="stylesheet" type="text/css">
+<script src="https://thronic.com/index.js" type="text/javascript"></script>
+<title>thronic.com - How to start an UAC program at boot</title>
+</head>
+<body>
+
+<h1>UAC Starting at Boot</h1><br>
+
+Tricky to do this via register runkey or startup folder.<br><br>
+
+One can use taskscheduler for this, but instead of having the scheduler continuously spend 
+resources watching it, you can just use cmd instead to kick start it, which leaves scheduler alone again:<br><br>
+
+<b>Command:</b>
+<blockquote><pre>cmd</pre></blockquote><br><br>
+
+<b>Arguments:</b>
+<blockquote><pre>/c start "title" "c:\path\to\UAC_program" -whatever -more -args</pre></blockquote><br><br>
+
+</body>
+</html>
